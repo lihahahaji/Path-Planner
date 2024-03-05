@@ -228,3 +228,65 @@ M* 算法是子维度扩展思想的一种实现，首先需要将每一个机�
 $$
 \left.\left.\hat{V}_k=\left\{v_l|\forall i\in I,v_l^is.t.\left\{\begin{array}{rr}e_{kl}^i\in E^i,&i\in C_k\\v_l^i=\phi^i(v_k^i),&i\notin C_k\end{array}\right.\right.\right\}\right.
 $$
+如果 $\Psi(v_{k})$不为空集，我们设置 $\hat{V}_k=\emptyset $，以防止 M* 考虑通过碰撞点的路径。
+
+我们需要一种有效的方法来保持碰撞集的更新，这是通过沿着到达碰撞的所有搜索路径传递有关碰撞的信息来实现的。
+
+为此，我们为每个顶点 vk 维护一个反向传播集，该集是当 vk 处于 $\hat{V_{l}}$ 状态时展开的所有顶点 vl 的集合。
+
+因此，反向传播集是 vk 的邻居集，规划者通过它找到了通往 vk 的路径 我们通过将 $C_k=\Psi(v_k)$  添加到 vk 反向传播集中每个 vl 的 Cl 来传播有关 vk 处碰撞的信息。
+
+
+
+然后，我们将 Cl 添加到 vl 的反向传播集中每个顶点的碰撞集中，并重复此过程，直到遇到包含 Ck 的碰撞集。
+
+由于 $\hat{V_{l}}$ 依赖于 Cl，因此更改 Cl 会将通过 vl 的新路径添加到搜索空间。因此，必须将 vl 添加回打开列表，以便可以搜索这些新路径（参见 **Algorithm 1** ）。
+
+
+
+![image-20240304213947126](./assets/M-star.assets/image-20240304213947126.png)
+
+
+
+最后，我们注意到，由于 $f(\pi^\phi(v_k,v_F))$  是所有路径 $\pi(v_k,v_F)$  成本的下限，因此它显然是用作 M* 的启发式函数的选择。我们定义启发式函数：
+$$
+h(v_k)=f(\pi^\phi(v_k,v_F))\leq f(\pi^*(v_k,v_F))
+$$
+M* is described in algorithm 2.
+
+![image-20240304214737736](./assets/M-star.assets/image-20240304214737736.png)
+
+### M* 算法基于图的描述
+
+IV-A中给出的M* 描述提供了搜索过程的局部描述。现在，我们提出了一个替代描述，它更好地捕捉了 M* 的全局属性，但不适合实现。
+
+
+
+在检查算法 2 时，我们看到 M* 与 A* 的 **不同之处仅在于 backprop 函数的存在**，以及在探索 vk 路径时使用 Vˆk 代替 G 中 vk 的所有邻居。
+
+只有当找到一个或多个冲突的新路径时，backprop 函数才会产生非平凡的结果。
+
+因此，M* 的行为与在图形 G# 上运行的 A* 完全相同，其中 G# 中 vk 的邻居是 Vˆk 中的顶点，直到 A* 找到新的机器人-机器人碰撞。
+
+通过将 M* 视为在 G# 上运行 A* 和根据搜索结果更新 G# 之间交替进行，我们可以利用 A* 的最优性和完整性属性来证明 M* 的类似属性。
+
+
+
+G# 由三个子图组成：G′、Gˆ 和 Gφ。G′ 是 G# 中被 M* 搜索的部分，Gˆ 表示 G′ 中顶点的有限邻居，Gφ 通过服从 φ 将 Gˆ 中的顶点连接到 vF。
+
+
+
+被 M* 搜索的 G 部分由图形 G′ = {V ′， E′} 表示。V ′ 是已添加到开放列表中的顶点集。E′ 由连接每个顶点 vk 的有向边 ekl 组成，该顶点已扩展 M* 至顶点 vl ∈ Vˆk。
+
+
+
+由于 G′ 表示规划器搜索过的所有路径，因此我们可以使用 G′ 来定义碰撞集：
+$$
+\left.C_k=\left\{\begin{array}{cc}\Psi(v_k)\bigcup_{v_l~s.t.~\exists\pi(v_k,v_l)\subset G'}\Psi(v_l)&v_k\in G'\\\emptyset&v_k\notin G'\end{array}\right.\right.
+$$
+如果 vk 不属于 G′，那么 M* 从未访问过 vk，我们也从未计算过 Ψ(vk)。
+
+
+
+在 M* 实际访问 vk 之前，我们乐观地认为 vk 和 $\pi^\phi(v_k,v_F)$ 是无冲突的，因此设置$C_k=\emptyset\mathrm{~and~}\hat{V}_k=\phi(v_k)$。
+
